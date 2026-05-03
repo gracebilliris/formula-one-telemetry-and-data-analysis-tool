@@ -1,0 +1,13 @@
+{
+  "intercept": 1.2,
+  "qualifyingDeltaWeight": 0.45,
+  "constructorTrendWeight": 0.15,
+  "circuitTypeWeight": 0.08,
+  "historicalPerformanceWeight": 0.12,
+  "metadata": {
+    "trainedAt": "2024-12-15T00:00:00Z",
+    "datasetSize": 847,
+    "modelVersion": "1.0",
+    "accuracy": 0.72
+  }
+}
