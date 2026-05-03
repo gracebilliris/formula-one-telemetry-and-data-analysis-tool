@@ -71,30 +71,42 @@ const LapComparison: React.FC<LapComparisonProps> = ({
         const driverNumbers = drivers.map((d) => d.driver_number);
         console.log('✓ Fetching lap data for session:', sessionKey, 'drivers:', driverNumbers);
 
-        // Fetch laps for all drivers
-        const lapsPromises = driverNumbers.map((driverNum) =>
-          openF1Api.getLaps({
-            session_key: sessionKey,
-            driver_number: driverNum,
-          })
+        // Fetch laps per driver but tolerate per-driver 404s (driver not in session)
+        const lapsResults = await Promise.allSettled(
+          driverNumbers.map((driverNum) =>
+            openF1Api.getLaps({
+              session_key: sessionKey,
+              driver_number: driverNum,
+            })
+          )
         );
 
-        const lapsResults = await Promise.all(lapsPromises);
-        const allLaps = lapsResults.flat();
+        const allLaps = lapsResults.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+        const missing = lapsResults
+          .map((r, i) => (r.status === 'rejected' ? driverNumbers[i] : null))
+          .filter((x): x is number => x !== null);
 
-        console.log('✓ Laps loaded:', allLaps.length);
+        console.log('✓ Laps loaded:', allLaps.length, 'missing drivers:', missing);
         if (allLaps.length === 0) {
-          setError('No lap data available for this session.');
+          const firstErr = lapsResults.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+          const statusCode = (firstErr?.reason as { response?: { status?: number } })?.response?.status;
+          throw Object.assign(new Error('No lap data for selected drivers.'), {
+            response: { status: statusCode },
+          });
         } else {
           setLaps(allLaps);
-          setError(null);
+          if (missing.length > 0) {
+            setError(`No laps for driver${missing.length > 1 ? 's' : ''} #${missing.join(', #')} in this session. Showing the others.`);
+          } else {
+            setError(null);
+          }
         }
       } catch (err: any) {
         const statusCode = err?.response?.status;
         let detailMsg = '';
         
         if (statusCode === 404) {
-          detailMsg = 'Lap data not yet available. Try selecting an earlier session (>4 hours old).';
+          detailMsg = 'No lap data for the selected drivers in this session. They may not have participated.';
         } else if (statusCode) {
           detailMsg = `Server error (HTTP ${statusCode}). Please check console for details.`;
         } else {
@@ -214,11 +226,13 @@ const LapComparison: React.FC<LapComparisonProps> = ({
     return null;
   };
 
+  const isPartialLap = !!error && laps.length > 0;
+
   if (loading) {
     return <ChartSkeleton title="Loading lap data…" />;
   }
 
-  if (error) {
+  if (error && !isPartialLap) {
     return (
       <StatusCard
         variant="warning"
@@ -245,6 +259,14 @@ const LapComparison: React.FC<LapComparisonProps> = ({
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-6">
+      {isPartialLap && (
+        <StatusCard
+          variant="info"
+          compact
+          title="Partial data"
+          message={error!.replace(/^Failed to load lap data\.\s*/, '')}
+        />
+      )}
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-white">Lap Comparison</h2>
         <p className="text-sm text-gray-400">

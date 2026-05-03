@@ -74,65 +74,63 @@ const TelemetryViewer: React.FC<TelemetryViewerProps> = ({
         const driverNumbers = drivers.map((d) => d.driver_number);
         console.log('✓ Fetching telemetry for session:', sessionKey, 'drivers:', driverNumbers);
 
-        // Fetch car data and laps for selected drivers
-        const [carDataResult, lapsResult] = await Promise.all([
-          openF1Api.getCarData({
-            session_key: sessionKey,
-            driver_number: driverNumbers[0], // Start with first driver
-          }),
-          openF1Api.getLaps({
-            session_key: sessionKey,
-            driver_number: driverNumbers[0],
-          }),
-        ]);
+        // Fetch in parallel; tolerate per-driver failures (e.g. driver not in this session -> 404)
+        const carResults = await Promise.allSettled(
+          driverNumbers.map((dn) =>
+            openF1Api.getCarData({ session_key: sessionKey, driver_number: dn })
+          )
+        );
+        const lapResults = await Promise.allSettled(
+          driverNumbers.map((dn) =>
+            openF1Api.getLaps({ session_key: sessionKey, driver_number: dn })
+          )
+        );
 
-        console.log('✓ First driver data loaded - Car data points:', carDataResult.length, 'Laps:', lapsResult.length);
+        const carDataResult = carResults.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+        const lapsResult = lapResults.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
-        // Fetch data for remaining drivers in parallel
-        if (driverNumbers.length > 1) {
-          const additionalData = await Promise.all(
-            driverNumbers.slice(1).map((driverNum) =>
-              openF1Api.getCarData({
-                session_key: sessionKey,
-                driver_number: driverNum,
-              })
-            )
-          );
-          console.log('✓ Additional drivers data loaded:', additionalData.map(d => d.length));
-          carDataResult.push(...additionalData.flat());
-        }
+        const missingCarDrivers = carResults
+          .map((r, i) => (r.status === 'rejected' ? driverNumbers[i] : null))
+          .filter((x): x is number => x !== null);
 
-        console.log('✓ Total telemetry points:', carDataResult.length);
+        console.log('✓ Telemetry loaded - car points:', carDataResult.length, 'laps:', lapsResult.length, 'missing drivers:', missingCarDrivers);
+
         if (carDataResult.length === 0) {
-          setError('No telemetry data available for this session. Session may not have started yet.');
+          // All drivers failed: surface a single error
+          const firstErr = carResults.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+          const statusCode = (firstErr?.reason as { response?: { status?: number } })?.response?.status;
+          throw Object.assign(new Error('No telemetry returned for any selected driver.'), {
+            response: { status: statusCode },
+          });
         } else {
           setCarData(carDataResult);
           setLaps(lapsResult);
-          setError(null);
+          if (missingCarDrivers.length > 0) {
+            setError(
+              `Telemetry not available for driver${missingCarDrivers.length > 1 ? 's' : ''} #${missingCarDrivers.join(', #')} in this session. Showing data for the others.`
+            );
+          } else {
+            setError(null);
+          }
         }
       } catch (err: any) {
         const statusCode = err?.response?.status;
         let detailMsg = '';
-        
+
         if (statusCode === 404) {
-          // 404 usually means telemetry data hasn't synced yet
-          detailMsg = 'Telemetry data not yet available. OpenF1 takes 1-4 hours to process race data after a session ends. Try selecting an earlier session (>4 hours old).';
+          detailMsg = 'No telemetry recorded for the selected drivers in this session. The drivers may not have participated, or the data is still syncing (OpenF1 takes 1–4 hours after a session ends).';
         } else if (statusCode === 422) {
-          // 422 means the request is structurally invalid - likely driver doesn't have data for this session type (e.g., pre-season testing)
-          detailMsg = 'This session type or driver may not have telemetry data available. Try a different session or driver combination.';
+          detailMsg = 'This session type may not have telemetry available (e.g. some pre-season tests). Try a Grand Prix race weekend.';
         } else if (statusCode === 429) {
-          // 429 means rate limited
           detailMsg = 'API rate limit exceeded. Please wait a moment and try again.';
         } else if (statusCode && statusCode >= 400 && statusCode < 500) {
-          // Other 4xx client errors
           detailMsg = `Request error (HTTP ${statusCode}). Please check your session and driver selections.`;
         } else if (statusCode && statusCode >= 500) {
-          // 5xx server errors
           detailMsg = `OpenF1 API error (HTTP ${statusCode}). The service may be temporarily unavailable.`;
         } else {
           detailMsg = `${err?.message || String(err)}`;
         }
-        
+
         console.error('Telemetry fetch failed:', err);
         setError(`Failed to load telemetry data. ${detailMsg}`);
       } finally {
@@ -247,11 +245,14 @@ const TelemetryViewer: React.FC<TelemetryViewerProps> = ({
     return null;
   };
 
+  // Distinguish hard errors (no data at all) from partial-data warnings.
+  const isPartial = !!error && carData.length > 0;
+
   if (loading) {
     return <ChartSkeleton title="Loading telemetry data…" />;
   }
 
-  if (error) {
+  if (error && !isPartial) {
     return (
       <StatusCard
         variant="warning"
@@ -275,6 +276,14 @@ const TelemetryViewer: React.FC<TelemetryViewerProps> = ({
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-6">
+      {isPartial && (
+        <StatusCard
+          variant="info"
+          compact
+          title="Partial data"
+          message={error!.replace(/^Failed to load telemetry data\.\s*/, '')}
+        />
+      )}
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-white">Telemetry Data</h2>
         <p className="text-sm text-gray-400">

@@ -92,68 +92,47 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
 
         const driverNumbers = drivers.map((d) => d.driver_number);
 
-        // Fetch stints, pit stops, and laps for all drivers
-        const [stintsResult, pitStopsResult, lapsResult] = await Promise.all([
-          openF1Api.getStints({
-            session_key: sessionKey,
-            driver_number: driverNumbers[0],
-          }).then(async (result) => {
-            if (driverNumbers.length > 1) {
-              const additionalStints = await Promise.all(
-                driverNumbers.slice(1).map((driverNum) =>
-                  openF1Api.getStints({
-                    session_key: sessionKey,
-                    driver_number: driverNum,
-                  })
-                )
-              );
-              return result.concat(...additionalStints.flat());
-            }
-            return result;
-          }),
-          openF1Api.getPitStops({
-            session_key: sessionKey,
-            driver_number: driverNumbers[0],
-          }).then(async (result) => {
-            if (driverNumbers.length > 1) {
-              const additionalPitStops = await Promise.all(
-                driverNumbers.slice(1).map((driverNum) =>
-                  openF1Api.getPitStops({
-                    session_key: sessionKey,
-                    driver_number: driverNum,
-                  })
-                )
-              );
-              return result.concat(...additionalPitStops.flat());
-            }
-            return result;
-          }),
-          openF1Api.getLaps({
-            session_key: sessionKey,
-            driver_number: driverNumbers[0],
-          }).then(async (result) => {
-            if (driverNumbers.length > 1) {
-              const additionalLaps = await Promise.all(
-                driverNumbers.slice(1).map((driverNum) =>
-                  openF1Api.getLaps({
-                    session_key: sessionKey,
-                    driver_number: driverNum,
-                  })
-                )
-              );
-              return result.concat(...additionalLaps.flat());
-            }
-            return result;
-          }),
+        const settle = async <T,>(
+          fetcher: (dn: number) => Promise<T[]>
+        ): Promise<{ data: T[]; missing: number[]; firstError?: unknown }> => {
+          const results = await Promise.allSettled(driverNumbers.map(fetcher));
+          const data = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+          const missing = results
+            .map((r, i) => (r.status === 'rejected' ? driverNumbers[i] : null))
+            .filter((x): x is number => x !== null);
+          const firstError = results.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+          return { data, missing, firstError: firstError?.reason };
+        };
+
+        const [stintsRes, pitsRes, lapsRes] = await Promise.all([
+          settle((dn) => openF1Api.getStints({ session_key: sessionKey, driver_number: dn })),
+          settle((dn) => openF1Api.getPitStops({ session_key: sessionKey, driver_number: dn })),
+          settle((dn) => openF1Api.getLaps({ session_key: sessionKey, driver_number: dn })),
         ]);
 
+        const stintsResult = stintsRes.data;
+        const pitStopsResult = pitsRes.data;
+        const lapsResult = lapsRes.data;
+
         console.log('✓ Tyre data loaded - Stints:', stintsResult.length, 'Pit Stops:', pitStopsResult.length, 'Laps:', lapsResult.length);
-        if (stintsResult.length === 0 && pitStopsResult.length === 0) {
-          setError('No tyre/pit data available for this session.');
+
+        if (stintsResult.length === 0 && pitStopsResult.length === 0 && lapsResult.length === 0) {
+          const firstErr = (stintsRes.firstError || pitsRes.firstError || lapsRes.firstError) as { response?: { status?: number } } | undefined;
+          throw Object.assign(new Error('No tyre data for selected drivers.'), {
+            response: { status: firstErr?.response?.status },
+          });
+        }
+
+        setStints(stintsResult);
+        setPitStops(pitStopsResult);
+        setLaps(lapsResult);
+
+        const missing = Array.from(new Set([...stintsRes.missing, ...pitsRes.missing, ...lapsRes.missing]));
+        if (missing.length > 0 && missing.length === driverNumbers.length) {
+          setError('Limited tyre data — pit stops or stints may be unavailable for the selected drivers.');
+        } else if (missing.length > 0) {
+          setError(`Some tyre data missing for driver${missing.length > 1 ? 's' : ''} #${missing.join(', #')}.`);
         } else {
-          setStints(stintsResult);
-          setPitStops(pitStopsResult);
-          setLaps(lapsResult);
           setError(null);
         }
       } catch (err: any) {
@@ -161,7 +140,7 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
         let detailMsg = '';
         
         if (statusCode === 404) {
-          detailMsg = 'Tyre data not yet available. Try selecting an earlier session (>4 hours old).';
+          detailMsg = 'No stint or pit data for these drivers in this session.';
         } else if (statusCode) {
           detailMsg = `Server error (HTTP ${statusCode}). Please check console for details.`;
         } else {
@@ -289,11 +268,13 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
     return null;
   };
 
+  const isPartialTyre = !!error && (stints.length > 0 || pitStops.length > 0 || laps.length > 0);
+
   if (loading) {
     return <ChartSkeleton title="Loading tyre data…" />;
   }
 
-  if (error) {
+  if (error && !isPartialTyre) {
     return (
       <StatusCard
         variant="warning"
@@ -306,6 +287,14 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-6">
+      {isPartialTyre && (
+        <StatusCard
+          variant="info"
+          compact
+          title="Partial data"
+          message={error!.replace(/^Failed to load tyre data\.\s*/, '')}
+        />
+      )}
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-white">Tyre Analysis</h2>
         <p className="text-sm text-gray-400">

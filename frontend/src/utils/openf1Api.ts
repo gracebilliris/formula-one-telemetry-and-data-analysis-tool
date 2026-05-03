@@ -65,7 +65,13 @@ const apiCallWithRetry = async <T>(
         try {
           const response = await axios.get<T[]>(`${API_BASE}/${endpoint}`, { 
             params,
-            timeout: 10000 
+            timeout: 10000,
+            // OpenF1 uses operators in param names (e.g. 'speed>': 1 -> ?speed%3E=1).
+            // Axios's default paramsSerializer URL-encodes the key correctly, but be
+            // explicit so '>' / '<' / '=' in keys survive.
+            paramsSerializer: {
+              encode: (val) => encodeURIComponent(val),
+            },
           });
           resolve(response.data);
           return;
@@ -186,7 +192,22 @@ export const openF1Api = {
   getMeetings: (params?: QueryParams) => apiCall<Meeting>('meetings', params),
   
   // Telemetry endpoints
-  getCarData: (params?: QueryParams) => apiCall<CarData>('car_data', params),
+  // car_data: OpenF1 returns 422 ("too much data") if no filter is provided.
+  // Default to speed>1 so we always get a manageable result (filters out only
+  // fully stationary cars). Callers can opt out by passing _noDefaultFilter: true,
+  // or override with their own threshold via _speedGt: <value>.
+  getCarData: (params?: QueryParams) => {
+    const cleanParams: QueryParams = { ...params };
+    const noDefault = cleanParams._noDefaultFilter;
+    const overrideSpeedGt = cleanParams._speedGt;
+    delete cleanParams._noDefaultFilter;
+    delete cleanParams._speedGt;
+    const speedGt = overrideSpeedGt !== undefined ? overrideSpeedGt : 1;
+    const finalParams: QueryParams = noDefault
+      ? cleanParams
+      : { ...cleanParams, 'speed>': speedGt as number };
+    return apiCall<CarData>('car_data', finalParams);
+  },
   getLocation: (params?: QueryParams) => apiCall<Location>('location', params),
   getLaps: (params?: QueryParams) => apiCall<Lap>('laps', params),
   getStints: (params?: QueryParams) => apiCall<Stint>('stints', params),
