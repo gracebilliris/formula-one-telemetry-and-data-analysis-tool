@@ -5,14 +5,17 @@ import { useTheme } from '../hooks/useTheme';
 import type { Driver, Location, Meeting, Session } from '../types/openf1';
 import { StatusCard } from '../components/UI';
 
-interface Frame {
-  t: number; // seconds since session start
-  positions: Map<number, { x: number; y: number }>;
+interface DriverTrack {
+  driver: Driver;
+  // Parallel arrays for cache-friendly binary search
+  ts: Float64Array; // ms since session start
+  xs: Float32Array;
+  ys: Float32Array;
 }
 
-const REPLAY_WINDOW_SECONDS = 600; // first 10 minutes of session
-const FRAME_HZ = 4; // resample to 4 fps for smooth playback
-const SPEEDS = [0.5, 1, 2, 4, 8] as const;
+const SPEEDS = [0.5, 1, 2, 4, 8, 16] as const;
+const MAX_SESSION_HOURS = 4; // sanity cap (longest GP races ~3h with red flags)
+const FETCH_CHUNK_MINUTES = 30; // chunk each driver fetch into 30-min slices
 
 export const RaceReplay = () => {
   const { isDark } = useTheme();
@@ -25,23 +28,25 @@ export const RaceReplay = () => {
   const [sessionKey, setSessionKey] = useState<number | ''>('');
 
   // Data state
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [frames, setFrames] = useState<Frame[]>([]);
+  const [tracks, setTracks] = useState<DriverTrack[]>([]);
+  const [duration, setDuration] = useState(0); // ms
   const [bounds, setBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number } | null>(null);
   const [trackPath, setTrackPath] = useState<Array<{ x: number; y: number }>>([]);
 
   // UI state
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
-  const [frameIdx, setFrameIdx] = useState(0);
+  const [currentMs, setCurrentMs] = useState(0);
   const [selectedDrivers, setSelectedDrivers] = useState<Set<number>>(new Set());
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastTickRef = useRef<number>(0);
+  const cancelRef = useRef<boolean>(false);
 
   // ── Load meetings for year
   useEffect(() => {
@@ -73,127 +78,146 @@ export const RaceReplay = () => {
     [sessions, sessionKey]
   );
 
-  // ── Load replay data when session selected
+  // ── Load full-session replay
   const loadReplay = async () => {
     if (!selectedSession) return;
+    cancelRef.current = false;
     setLoading(true);
     setError(null);
     setProgress(0);
-    setFrames([]);
+    setProgressLabel('Fetching drivers…');
+    setTracks([]);
     setBounds(null);
     setTrackPath([]);
-    setFrameIdx(0);
+    setCurrentMs(0);
     setPlaying(false);
 
     try {
       const sessionStart = new Date(selectedSession.date_start).getTime();
-      const windowEnd = new Date(sessionStart + REPLAY_WINDOW_SECONDS * 1000).toISOString();
-      const startISO = new Date(sessionStart).toISOString();
+      const rawEnd = new Date(selectedSession.date_end).getTime();
+      const cap = sessionStart + MAX_SESSION_HOURS * 3600 * 1000;
+      const sessionEnd = Math.min(rawEnd, cap);
+      const totalMs = sessionEnd - sessionStart;
+      setDuration(totalMs);
 
       const driversList = await openF1Api.getDrivers({ session_key: selectedSession.session_key });
       if (!driversList.length) throw new Error('No drivers found for this session.');
-      setDrivers(driversList);
       setSelectedDrivers(new Set());
-      setProgress(5);
+      setProgress(3);
 
-      // Fetch /location for each driver in parallel (with progress)
-      const totalDrivers = driversList.length;
-      let done = 0;
-      const perDriver = await Promise.allSettled(
-        driversList.map(async (d) => {
-          const locs = await openF1Api.getLocation({
-            session_key: selectedSession.session_key,
-            driver_number: d.driver_number,
-            'date>': startISO,
-            'date<': windowEnd,
-          });
-          done++;
-          setProgress(5 + Math.round((done / totalDrivers) * 80));
-          return { driverNumber: d.driver_number, locs: locs as Location[] };
-        })
-      );
-
-      const driverLocs: Array<{ driverNumber: number; locs: Location[] }> = [];
-      for (const r of perDriver) {
-        if (r.status === 'fulfilled' && r.value.locs.length > 0) driverLocs.push(r.value);
+      // Build chunk windows over the session
+      const chunkMs = FETCH_CHUNK_MINUTES * 60 * 1000;
+      const chunks: Array<{ start: string; end: string }> = [];
+      for (let t = sessionStart; t < sessionEnd; t += chunkMs) {
+        chunks.push({
+          start: new Date(t).toISOString(),
+          end: new Date(Math.min(t + chunkMs, sessionEnd)).toISOString(),
+        });
       }
-      if (driverLocs.length === 0) throw new Error('No location data for this session window.');
 
-      // Compute world bounds
+      const totalRequests = driversList.length * chunks.length;
+      let done = 0;
+
+      // Fetch each driver's full trace in chunks; up to 4 drivers in parallel
+      const fetchOneDriver = async (d: Driver): Promise<DriverTrack | null> => {
+        const allLocs: Location[] = [];
+        for (const c of chunks) {
+          if (cancelRef.current) return null;
+          try {
+            const part = await openF1Api.getLocation({
+              session_key: selectedSession.session_key,
+              driver_number: d.driver_number,
+              'date>': c.start,
+              'date<': c.end,
+            });
+            allLocs.push(...(part as Location[]));
+          } catch {
+            // skip this chunk for this driver
+          }
+          done++;
+          setProgress(3 + Math.round((done / totalRequests) * 92));
+          setProgressLabel(`Fetching #${d.driver_number} ${d.name_acronym} (${done}/${totalRequests})`);
+        }
+        if (allLocs.length === 0) return null;
+
+        // Sort by date then build typed arrays relative to sessionStart
+        allLocs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const ts = new Float64Array(allLocs.length);
+        const xs = new Float32Array(allLocs.length);
+        const ys = new Float32Array(allLocs.length);
+        for (let i = 0; i < allLocs.length; i++) {
+          ts[i] = new Date(allLocs[i].date).getTime() - sessionStart;
+          xs[i] = allLocs[i].x;
+          ys[i] = allLocs[i].y;
+        }
+        return { driver: d, ts, xs, ys };
+      };
+
+      // Process in batches of 4 to bound concurrency
+      const BATCH = 4;
+      const built: DriverTrack[] = [];
+      for (let i = 0; i < driversList.length; i += BATCH) {
+        if (cancelRef.current) throw new Error('Cancelled');
+        const slice = driversList.slice(i, i + BATCH);
+        const results = await Promise.all(slice.map(fetchOneDriver));
+        for (const r of results) if (r) built.push(r);
+      }
+
+      if (built.length === 0) throw new Error('No location data for this session.');
+
+      // Compute world bounds across all drivers
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      for (const { locs } of driverLocs) {
-        for (const p of locs) {
-          if (p.x < minX) minX = p.x;
-          if (p.x > maxX) maxX = p.x;
-          if (p.y < minY) minY = p.y;
-          if (p.y > maxY) maxY = p.y;
+      for (const tr of built) {
+        for (let i = 0; i < tr.xs.length; i++) {
+          const x = tr.xs[i], y = tr.ys[i];
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
         }
       }
       setBounds({ minX, maxX, minY, maxY });
 
-      // Build track polyline from longest driver trace (downsampled)
-      const longest = driverLocs.reduce((a, b) => (a.locs.length > b.locs.length ? a : b));
+      // Build track polyline from longest driver
+      const longest = built.reduce((a, b) => (a.xs.length > b.xs.length ? a : b));
       const path: Array<{ x: number; y: number }> = [];
-      const step = Math.max(1, Math.floor(longest.locs.length / 600));
-      for (let i = 0; i < longest.locs.length; i += step) {
-        path.push({ x: longest.locs[i].x, y: longest.locs[i].y });
+      const step = Math.max(1, Math.floor(longest.xs.length / 1200));
+      for (let i = 0; i < longest.xs.length; i += step) {
+        path.push({ x: longest.xs[i], y: longest.ys[i] });
       }
       setTrackPath(path);
-
-      // Resample to fixed timeline
-      const frameDt = 1000 / FRAME_HZ;
-      const totalFrames = REPLAY_WINDOW_SECONDS * FRAME_HZ;
-
-      // Pre-sort each driver's locs and prepare cursor index
-      const driverCursors = driverLocs.map(({ driverNumber, locs }) => {
-        const sorted = [...locs].sort((a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        return { driverNumber, locs: sorted, cursor: 0 };
-      });
-
-      const builtFrames: Frame[] = [];
-      for (let f = 0; f < totalFrames; f++) {
-        const tMs = sessionStart + f * frameDt;
-        const positions = new Map<number, { x: number; y: number }>();
-        for (const dc of driverCursors) {
-          while (
-            dc.cursor < dc.locs.length - 1 &&
-            new Date(dc.locs[dc.cursor + 1].date).getTime() <= tMs
-          ) {
-            dc.cursor++;
-          }
-          const p = dc.locs[dc.cursor];
-          if (p) positions.set(dc.driverNumber, { x: p.x, y: p.y });
-        }
-        builtFrames.push({ t: f / FRAME_HZ, positions });
-      }
-      setFrames(builtFrames);
+      setTracks(built);
       setProgress(100);
+      setProgressLabel('Done');
     } catch (e: any) {
       console.error('Replay load failed', e);
-      setError(e?.message || 'Failed to load replay data.');
+      if (!cancelRef.current) setError(e?.message || 'Failed to load replay data.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Playback loop
+  const cancelLoad = () => {
+    cancelRef.current = true;
+    setLoading(false);
+    setProgressLabel('Cancelled');
+  };
+
+  // ── Playback loop (continuous time, not frame-indexed)
   useEffect(() => {
-    if (!playing || frames.length === 0) {
+    if (!playing || tracks.length === 0 || duration === 0) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
     lastTickRef.current = performance.now();
     const tick = (now: number) => {
-      const dt = (now - lastTickRef.current) / 1000;
+      const dt = now - lastTickRef.current;
       lastTickRef.current = now;
-      setFrameIdx((idx) => {
-        const advance = Math.max(1, Math.round(dt * FRAME_HZ * speed));
-        const next = idx + advance;
-        if (next >= frames.length - 1) {
+      setCurrentMs((t) => {
+        const next = t + dt * speed;
+        if (next >= duration) {
           setPlaying(false);
-          return frames.length - 1;
+          return duration;
         }
         return next;
       });
@@ -201,12 +225,25 @@ export const RaceReplay = () => {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [playing, frames.length, speed]);
+  }, [playing, tracks.length, duration, speed]);
+
+  // Binary search for last index with ts[i] <= target
+  const findIndex = (ts: Float64Array, target: number): number => {
+    let lo = 0, hi = ts.length - 1;
+    if (ts.length === 0 || target < ts[0]) return -1;
+    if (target >= ts[hi]) return hi;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (ts[mid] <= target) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  };
 
   // ── Render canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !bounds || frames.length === 0) return;
+    if (!canvas || !bounds || tracks.length === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -226,7 +263,6 @@ export const RaceReplay = () => {
     const scale = Math.min((cssW - padding * 2) / worldW, (cssH - padding * 2) / worldH);
     const offX = (cssW - worldW * scale) / 2 - bounds.minX * scale;
     const offY = (cssH - worldH * scale) / 2 - bounds.minY * scale;
-    // Flip Y so track is upright (OpenF1 y grows differently)
     const project = (x: number, y: number) => ({
       px: x * scale + offX,
       py: cssH - (y * scale + offY),
@@ -254,25 +290,22 @@ export const RaceReplay = () => {
       ctx.setLineDash([]);
     }
 
-    // Cars
-    const frame = frames[frameIdx];
-    if (!frame) return;
-    for (const d of drivers) {
-      const pos = frame.positions.get(d.driver_number);
-      if (!pos) continue;
-      const isFocused = selectedDrivers.size === 0 || selectedDrivers.has(d.driver_number);
-      const { px, py } = project(pos.x, pos.y);
-      const color = '#' + (d.team_colour || '888888');
+    // Cars (binary-search each driver's track for current time)
+    for (const tr of tracks) {
+      const idx = findIndex(tr.ts, currentMs);
+      if (idx < 0) continue;
+      const isFocused = selectedDrivers.size === 0 || selectedDrivers.has(tr.driver.driver_number);
+      const x = tr.xs[idx], y = tr.ys[idx];
+      const { px, py } = project(x, y);
+      const color = '#' + (tr.driver.team_colour || '888888');
 
-      ctx.globalAlpha = isFocused ? 1 : 0.25;
+      ctx.globalAlpha = isFocused ? 1 : 0.2;
 
-      // glow
       ctx.beginPath();
       ctx.arc(px, py, 11, 0, Math.PI * 2);
       ctx.fillStyle = color + '33';
       ctx.fill();
 
-      // dot
       ctx.beginPath();
       ctx.arc(px, py, 6, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -281,25 +314,23 @@ export const RaceReplay = () => {
       ctx.strokeStyle = '#000';
       ctx.stroke();
 
-      // Acronym label
       if (isFocused) {
         ctx.font = 'bold 11px Inter, system-ui, sans-serif';
         ctx.fillStyle = isDark ? '#f9fafb' : '#111827';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(d.name_acronym || `#${d.driver_number}`, px + 9, py - 9);
+        ctx.fillText(tr.driver.name_acronym || `#${tr.driver.driver_number}`, px + 9, py - 9);
       }
     }
     ctx.globalAlpha = 1;
-  }, [frames, frameIdx, bounds, trackPath, drivers, selectedDrivers, isDark]);
+  }, [tracks, currentMs, bounds, trackPath, selectedDrivers, isDark]);
 
-  const totalSeconds = frames.length / FRAME_HZ;
-  const currentSeconds = frameIdx / FRAME_HZ;
-
-  const fmtTime = (s: number) => {
-    const mm = Math.floor(s / 60).toString().padStart(2, '0');
-    const ss = Math.floor(s % 60).toString().padStart(2, '0');
-    return `${mm}:${ss}`;
+  const fmtTime = (ms: number) => {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const hh = Math.floor(total / 3600);
+    const mm = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+    const ss = (total % 60).toString().padStart(2, '0');
+    return hh > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
   };
 
   const toggleDriver = (n: number) => {
@@ -311,19 +342,19 @@ export const RaceReplay = () => {
   };
 
   const years = [2024, 2025, 2026];
+  const drivers = tracks.map((t) => t.driver);
+  const sessionDurationLabel =
+    duration > 0 ? fmtTime(duration) : '';
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950' : 'bg-gray-50'} px-4 sm:px-6 lg:px-8 py-8`}>
       <div className="max-w-7xl mx-auto space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
             🏎️ Race Replay
           </h1>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Animated 2D replay of car GPS positions from OpenF1's <code className="px-1 rounded bg-black/20">/location</code> endpoint.
+            Full-session animated 2D replay of car GPS positions from OpenF1's <code className="px-1 rounded bg-black/20">/location</code> endpoint.
             Inspired by{' '}
             <a
               href="https://github.com/IAmTomShaw/f1-race-replay"
@@ -379,17 +410,42 @@ export const RaceReplay = () => {
             </select>
           </div>
           <div className="md:col-span-4 flex flex-wrap gap-3 items-center pt-2">
-            <button
-              onClick={loadReplay}
-              disabled={!selectedSession || loading || selectedSession?.is_cancelled}
-              className="px-5 py-2 rounded-md bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-bold uppercase tracking-wide transition-colors"
-            >
-              {loading ? `Loading… ${progress}%` : 'Load replay'}
-            </button>
-            <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-              First {REPLAY_WINDOW_SECONDS / 60} minutes of the session • {drivers.length} drivers
-            </span>
+            {!loading ? (
+              <button
+                onClick={loadReplay}
+                disabled={!selectedSession || selectedSession?.is_cancelled}
+                className="px-5 py-2 rounded-md bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-bold uppercase tracking-wide transition-colors"
+              >
+                Load full session replay
+              </button>
+            ) : (
+              <button
+                onClick={cancelLoad}
+                className="px-5 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold uppercase tracking-wide"
+              >
+                Cancel ({progress}%)
+              </button>
+            )}
+            {selectedSession && !loading && tracks.length === 0 && (
+              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                Loads the entire session — Practice / Qualifying / Race. Larger sessions may take 30–60 s.
+              </span>
+            )}
+            {tracks.length > 0 && (
+              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                Loaded {tracks.length} drivers • {sessionDurationLabel} of replay
+              </span>
+            )}
           </div>
+
+          {loading && (
+            <div className="md:col-span-4 space-y-1">
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{progressLabel}</div>
+              <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                <div className="h-full bg-red-600 transition-all" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -411,12 +467,12 @@ export const RaceReplay = () => {
         )}
 
         {/* Replay viewport */}
-        {frames.length > 0 && bounds && (
+        {tracks.length > 0 && bounds && duration > 0 && (
           <div className={`rounded-xl overflow-hidden ${isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'}`}>
             <div className="relative w-full aspect-[16/9] bg-black/40">
               <canvas ref={canvasRef} className="w-full h-full block" />
               <div className="absolute top-3 left-3 px-3 py-1.5 rounded-md bg-black/60 text-white text-xs font-mono backdrop-blur-sm">
-                T+{fmtTime(currentSeconds)} / {fmtTime(totalSeconds)}
+                T+{fmtTime(currentMs)} / {fmtTime(duration)}
               </div>
             </div>
 
@@ -430,10 +486,22 @@ export const RaceReplay = () => {
                   {playing ? '⏸ Pause' : '▶ Play'}
                 </button>
                 <button
-                  onClick={() => { setFrameIdx(0); setPlaying(false); }}
+                  onClick={() => { setCurrentMs(0); setPlaying(false); }}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
                 >
                   ⏮ Restart
+                </button>
+                <button
+                  onClick={() => setCurrentMs((t) => Math.max(0, t - 30000))}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                >
+                  ⏪ -30s
+                </button>
+                <button
+                  onClick={() => setCurrentMs((t) => Math.min(duration, t + 30000))}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                >
+                  +30s ⏩
                 </button>
                 <div className="flex items-center gap-1 ml-2">
                   <span className={`text-xs font-semibold uppercase mr-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Speed</span>
@@ -457,9 +525,10 @@ export const RaceReplay = () => {
               <input
                 type="range"
                 min={0}
-                max={frames.length - 1}
-                value={frameIdx}
-                onChange={(e) => { setPlaying(false); setFrameIdx(parseInt(e.target.value, 10)); }}
+                max={duration}
+                step={100}
+                value={currentMs}
+                onChange={(e) => { setPlaying(false); setCurrentMs(parseInt(e.target.value, 10)); }}
                 className="w-full accent-red-600"
               />
 
@@ -495,12 +564,12 @@ export const RaceReplay = () => {
           </div>
         )}
 
-        {!frames.length && !loading && !error && (
+        {!tracks.length && !loading && !error && (
           <StatusCard
             variant="info"
             icon="🏁"
             title="Pick a session to start replay"
-            message="Choose a Grand Prix and session above, then hit Load replay. Data is fetched from OpenF1's /location endpoint (4 Hz GPS coordinates per car)."
+            message="Choose a Grand Prix and session above, then hit Load full session replay. The entire session (Practice, Qualifying or Race) will be loaded — for a 2-hour race that's roughly 50 MB of GPS data fetched in chunks."
           />
         )}
       </div>
