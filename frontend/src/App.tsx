@@ -9,6 +9,7 @@ import './App.css';
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const RaceSummariser = lazy(() => import('./pages/RaceSummariser').then(m => ({ default: m.RaceSummariser })));
 const RacePredictor = lazy(() => import('./pages/RacePredictor').then(m => ({ default: m.RacePredictor })));
+const RaceReplay = lazy(() => import('./pages/RaceReplay').then(m => ({ default: m.RaceReplay })));
 
 const PageFallback = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -31,6 +32,7 @@ function App() {
               <Suspense fallback={<PageFallback />}>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/replay" element={<RaceReplay />} />
                   <Route path="/summariser" element={<RaceSummariser />} />
                   <Route path="/predictor" element={<RacePredictor />} />
                 </Routes>

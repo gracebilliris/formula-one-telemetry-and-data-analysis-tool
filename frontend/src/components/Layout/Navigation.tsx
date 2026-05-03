@@ -21,6 +21,12 @@ export const Navigation = () => {
       description: 'Analyze telemetry data',
     },
     {
+      label: 'Race Replay',
+      href: '/replay',
+      icon: '🏎️',
+      description: 'Animated GPS replay',
+    },
+    {
       label: 'AI Race Summariser',
       href: '/summariser',
       icon: '🏁',

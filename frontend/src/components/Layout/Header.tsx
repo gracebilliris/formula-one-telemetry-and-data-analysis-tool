@@ -9,6 +9,7 @@ export const Header = () => {
 
   const navLinks = [
     { label: 'Dashboard', href: '/' },
+    { label: 'Race Replay', href: '/replay' },
     { label: 'Race Summariser', href: '/summariser' },
     { label: 'Race Predictor', href: '/predictor' },
   ];

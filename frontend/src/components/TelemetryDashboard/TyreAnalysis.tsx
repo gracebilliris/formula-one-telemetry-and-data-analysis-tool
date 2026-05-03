@@ -66,10 +66,18 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
 
   const compoundColors: Record<string, string> = {
     SOFT: '#ff1801',
-    MEDIUM: '#ffeb3b',
-    HARD: '#ffffff',
-    INTERMEDIATE: '#00ff00',
-    WET: '#0082ff',
+    MEDIUM: '#ffd60a',
+    HARD: '#f5f5f5',
+    INTERMEDIATE: '#22c55e',
+    WET: '#0ea5e9',
+  };
+
+  const compoundTextColors: Record<string, string> = {
+    SOFT: '#ffffff',
+    MEDIUM: '#1a1a1a',
+    HARD: '#1a1a1a',
+    INTERMEDIATE: '#ffffff',
+    WET: '#ffffff',
   };
 
   useEffect(() => {
@@ -408,10 +416,12 @@ const TyreAnalysis: React.FC<TyreAnalysisProps> = ({
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-black"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ring-black/20"
                           style={{
                             backgroundColor:
-                              compoundColors[stint.compound] || '#999999',
+                              compoundColors[stint.compound] || '#9ca3af',
+                            color:
+                              compoundTextColors[stint.compound] || '#1a1a1a',
                           }}
                         >
                           {stint.compound}
