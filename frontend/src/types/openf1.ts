@@ -21,6 +21,7 @@ export interface Session {
   meeting_key: number;
   gmt_offset: string;
   is_bookmarked: boolean;
+  is_cancelled?: boolean;
 }
 
 export interface Meeting {

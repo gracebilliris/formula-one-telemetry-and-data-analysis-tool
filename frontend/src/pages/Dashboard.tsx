@@ -324,7 +324,7 @@ export const Dashboard = () => {
                       <option value="">Select</option>
                       {filteredSessions.map((session) => (
                         <option key={session.session_key} value={session.session_key}>
-                          {session.session_name} • {new Date(session.date_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {session.session_name} • {new Date(session.date_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{session.is_cancelled ? ' (cancelled)' : ''}
                         </option>
                       ))}
                     </select>
@@ -450,8 +450,19 @@ export const Dashboard = () => {
         {/* Telemetry Display Area */}
         {selectedSession && selectedDriverNumbers.length > 0 && selectedDrivers.length > 0 ? (
           <div className="space-y-8">
+            {/* Cancelled session warning */}
+            {selectedSession.is_cancelled && (
+              <StatusCard
+                variant="warning"
+                icon="🚫"
+                title="This session was cancelled"
+                message="OpenF1 has no telemetry, lap, or tyre data for cancelled sessions — the cars never ran."
+                hint="Try a different Grand Prix or session that completed normally."
+              />
+            )}
+
             {/* Pre-season testing warning */}
-            {(() => {
+            {!selectedSession.is_cancelled && (() => {
               const meeting = meetings.find((m) => m.meeting_key === selectedSession.meeting_key);
               const isPreseason = /pre[- ]?season|testing/i.test(
                 meeting?.meeting_official_name || ''
@@ -469,6 +480,8 @@ export const Dashboard = () => {
             })()}
 
             {/* Telemetry Tab System */}
+            {!selectedSession.is_cancelled && (
+              <>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -503,6 +516,8 @@ export const Dashboard = () => {
                 drivers={selectedDrivers}
               />
             </motion.div>
+              </>
+            )}
           </div>
         ) : (
           <motion.div
