@@ -1,20 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  Clapperboard,
+  Flag,
+  LineChart,
+  Sun,
+  Moon,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
 interface NavLink {
   label: string;
   short: string;
   href: string;
-  icon: string;
+  Icon: typeof Activity;
 }
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Telemetry', short: 'Dash', href: '/', icon: '📊' },
-  { label: 'Race Replay', short: 'Replay', href: '/replay', icon: '🏎️' },
-  { label: 'Summariser', short: 'Sum', href: '/summariser', icon: '🏁' },
-  { label: 'Predictor', short: 'Predict', href: '/predictor', icon: '🔮' },
+  { label: 'Telemetry', short: 'Tele', href: '/', Icon: Activity },
+  { label: 'Race Replay', short: 'Replay', href: '/replay', Icon: Clapperboard },
+  { label: 'Summariser', short: 'Sum', href: '/summariser', Icon: Flag },
+  { label: 'Predictor', short: 'Predict', href: '/predictor', Icon: LineChart },
 ];
 
 export const Header = () => {
@@ -39,61 +49,86 @@ export const Header = () => {
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
           ? isDark
-            ? 'bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 shadow-lg shadow-black/30'
-            : 'bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-sm'
+            ? 'bg-[#0C0E14]/85 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/40'
+            : 'bg-white/85 backdrop-blur-xl border-b border-slate-900/[0.06] shadow-sm'
           : isDark
-          ? 'bg-slate-950/40 backdrop-blur-md border-b border-transparent'
+          ? 'bg-[#0C0E14]/30 backdrop-blur-md border-b border-transparent'
           : 'bg-white/40 backdrop-blur-md border-b border-transparent'
       }`}
     >
-      <div className="h-[3px] w-full bg-gradient-to-r from-red-700 via-red-500 to-red-700" />
+      <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#E10600] to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand */}
-          <Link to="/" className="flex items-center gap-3 group" aria-label="Home">
+          <Link to="/" className="flex items-center gap-2.5 group" aria-label="Home">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-lg shadow-red-600/30 ring-1 ring-red-400/40 group-hover:shadow-red-600/50 transition-shadow">
-                <span className="text-white font-black text-base tracking-tighter">F1</span>
-              </div>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-950 animate-pulse" aria-hidden />
+              <svg
+                viewBox="0 0 32 32"
+                className="w-9 h-9 drop-shadow-[0_4px_12px_rgba(225,6,0,0.45)]"
+                aria-hidden
+              >
+                <defs>
+                  <linearGradient id="f1mark" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#FF1801" />
+                    <stop offset="100%" stopColor="#B30500" />
+                  </linearGradient>
+                </defs>
+                <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#f1mark)" />
+                <path
+                  d="M9 22 L13 10 L24 10 L22.5 13 L15 13 L14 16 L21 16 L20 19 L13 19 L12 22 Z"
+                  fill="white"
+                />
+              </svg>
+              <span
+                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ${
+                  isDark ? 'ring-[#0C0E14]' : 'ring-white'
+                } animate-pulse`}
+                aria-hidden
+              />
             </div>
             <div className="hidden sm:flex flex-col leading-tight">
-              <span className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <span className={`text-[13px] font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Telemetry
               </span>
-              <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              <span className={`text-[9px] font-bold uppercase tracking-[0.22em] ${isDark ? 'text-[#FF1801]' : 'text-[#E10600]'}`}>
                 Analysis
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
-            <div className={`flex items-center gap-0.5 p-1 rounded-xl ${isDark ? 'bg-slate-900/60 ring-1 ring-slate-800/60' : 'bg-slate-100/80 ring-1 ring-slate-200/80'}`}>
-              {NAV_LINKS.map((link) => {
+          <nav className="hidden md:flex items-center" aria-label="Primary">
+            <div
+              className={`flex items-center gap-0.5 p-1 rounded-xl border ${
+                isDark
+                  ? 'bg-white/[0.03] border-white/5'
+                  : 'bg-slate-900/[0.025] border-slate-900/[0.06]'
+              }`}
+            >
+              {NAV_LINKS.map(({ Icon, ...link }) => {
                 const isActive = location.pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     to={link.href}
-                    className={`relative px-3 lg:px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    className={`relative px-3 lg:px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
                       isActive
                         ? 'text-white'
                         : isDark
-                        ? 'text-slate-300 hover:text-white'
+                        ? 'text-slate-400 hover:text-white'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="active-nav-pill"
-                        className="absolute inset-0 rounded-lg bg-gradient-to-b from-red-600 to-red-700 shadow-md shadow-red-600/40"
+                        className="absolute inset-0 rounded-lg bg-gradient-to-b from-[#FF1801] via-[#E10600] to-[#B30500] shadow-[0_4px_12px_-2px_rgba(225,6,0,0.5),0_0_0_1px_rgba(225,6,0,0.5)]"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <span aria-hidden>{link.icon}</span>
+                      <Icon className="w-4 h-4" strokeWidth={2.25} />
                       <span className="hidden lg:inline">{link.label}</span>
                       <span className="lg:hidden">{link.short}</span>
                     </span>
@@ -104,13 +139,15 @@ export const Header = () => {
           </nav>
 
           {/* Right cluster */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <a
               href="https://github.com/gracebilliris/formula-one-telemetry-and-data-analysis-tool"
               target="_blank"
               rel="noopener noreferrer"
-              className={`hidden sm:flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
-                isDark ? 'bg-slate-800/60 hover:bg-slate-700 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              className={`hidden sm:flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                isDark
+                  ? 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] text-slate-300'
+                  : 'bg-slate-900/[0.025] border-slate-900/[0.06] hover:bg-slate-900/[0.06] text-slate-700'
               }`}
               aria-label="GitHub repository"
               title="View source on GitHub"
@@ -122,29 +159,28 @@ export const Header = () => {
 
             <button
               onClick={toggleTheme}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg transition-all ${
+              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
                 isDark
-                  ? 'bg-slate-800/60 hover:bg-slate-700 text-amber-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  ? 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] text-amber-300'
+                  : 'bg-slate-900/[0.025] border-slate-900/[0.06] hover:bg-slate-900/[0.06] text-slate-700'
               }`}
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               title={isDark ? 'Light mode' : 'Dark mode'}
             >
-              <span className="text-base leading-none">{isDark ? '☀️' : '🌙'}</span>
+              {isDark ? <Sun className="w-4 h-4" strokeWidth={2.25} /> : <Moon className="w-4 h-4" strokeWidth={2.25} />}
             </button>
 
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
-                isDark ? 'bg-slate-800/60 hover:bg-slate-700 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                isDark
+                  ? 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] text-slate-200'
+                  : 'bg-slate-900/[0.025] border-slate-900/[0.06] hover:bg-slate-900/[0.06] text-slate-700'
               }`}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileOpen}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d={mobileOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 7h16M4 12h16M4 17h16'} />
-              </svg>
+              {mobileOpen ? <X className="w-4 h-4" strokeWidth={2.25} /> : <Menu className="w-4 h-4" strokeWidth={2.25} />}
             </button>
           </div>
         </div>
@@ -161,7 +197,7 @@ export const Header = () => {
               aria-label="Mobile navigation"
             >
               <ul className="py-3 space-y-1">
-                {NAV_LINKS.map((link) => {
+                {NAV_LINKS.map(({ Icon, ...link }) => {
                   const isActive = location.pathname === link.href;
                   return (
                     <li key={link.href}>
@@ -169,16 +205,16 @@ export const Header = () => {
                         to={link.href}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors ${
                           isActive
-                            ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/30'
+                            ? 'bg-gradient-to-r from-[#FF1801] to-[#B30500] text-white shadow-md shadow-red-600/30'
                             : isDark
-                            ? 'text-slate-200 hover:bg-slate-800/60'
-                            : 'text-slate-700 hover:bg-slate-100'
+                            ? 'text-slate-200 hover:bg-white/[0.04]'
+                            : 'text-slate-700 hover:bg-slate-900/[0.04]'
                         }`}
                       >
-                        <span className="text-lg" aria-hidden>{link.icon}</span>
+                        <Icon className="w-4 h-4" strokeWidth={2.25} />
                         <span>{link.label}</span>
                         {isActive && (
-                          <span className="ml-auto text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">
+                          <span className="ml-auto text-[9px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">
                             Active
                           </span>
                         )}

@@ -13,27 +13,28 @@ export const Footer = () => {
   ];
 
   return (
-    <footer
-      className={`relative mt-16 ${
-        isDark
-          ? 'bg-gradient-to-b from-slate-950 to-black border-t border-slate-800/80'
-          : 'bg-gradient-to-b from-white to-slate-50 border-t border-slate-200/80'
-      }`}
-    >
-      <div className="h-[3px] w-full bg-gradient-to-r from-red-700 via-red-500 to-red-700" />
+    <footer className={`relative mt-20 ${isDark ? 'border-t border-white/5' : 'border-t border-slate-900/[0.06]'}`}>
+      <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#E10600] to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
           <div className="md:col-span-2">
-            <Link to="/" className="inline-flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-lg shadow-red-600/30 ring-1 ring-red-400/40">
-                <span className="text-white font-black text-base tracking-tighter">F1</span>
-              </div>
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-4">
+              <svg viewBox="0 0 32 32" className="w-9 h-9 drop-shadow-[0_4px_12px_rgba(225,6,0,0.45)]" aria-hidden>
+                <defs>
+                  <linearGradient id="f1mark-footer" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#FF1801" />
+                    <stop offset="100%" stopColor="#B30500" />
+                  </linearGradient>
+                </defs>
+                <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#f1mark-footer)" />
+                <path d="M9 22 L13 10 L24 10 L22.5 13 L15 13 L14 16 L21 16 L20 19 L13 19 L12 22 Z" fill="white" />
+              </svg>
               <div className="flex flex-col leading-tight">
-                <span className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <span className={`text-[13px] font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Telemetry
                 </span>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                <span className={`text-[9px] font-bold uppercase tracking-[0.22em] ${isDark ? 'text-[#FF1801]' : 'text-[#E10600]'}`}>
                   Analysis
                 </span>
               </div>

@@ -347,7 +347,7 @@ export const RaceReplay = () => {
     duration > 0 ? fmtTime(duration) : '';
 
   return (
-    <div className={`min-h-screen transition-colors ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'} px-4 sm:px-6 lg:px-8 py-10`}>
+    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-10">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>

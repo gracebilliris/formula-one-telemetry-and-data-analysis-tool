@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { useSessionMetadata } from '../hooks/useSessionMetadata';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Flag, FlaskConical, Ban, Activity, BarChart3, LineChart } from 'lucide-react';
 import type { Session, Driver, Meeting } from '../types/openf1';
 import { openF1Api } from '../utils/openf1Api';
 import { TelemetryViewer, LapComparison, TyreAnalysis } from '../components/TelemetryDashboard';
@@ -155,21 +156,14 @@ export const Dashboard = () => {
   }, [showDriverModal, drivers, filteredDrivers]);
 
   return (
-    <div
-      className={`min-h-screen transition-colors ${
-        isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         {/* Header Section */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="f1-accent-bar mb-4" />
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <h1 className="f1-page-heading">Telemetry Analysis</h1>
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">Live data</span>
-          </div>
+          <div className="f1-eyebrow mb-3">Live data · OpenF1</div>
+          <h1 className="f1-page-heading">Telemetry Analysis</h1>
           <p className="f1-page-sub">
-            Real-time F1 telemetry comparison and race analysis powered by OpenF1.
+            Compare drivers lap-by-lap, inspect speed traces, and analyse tyre strategy across any session in the OpenF1 archive.
           </p>
         </motion.div>
 
@@ -355,10 +349,12 @@ export const Dashboard = () => {
               exit={{ opacity: 0, y: -10 }}
               className="f1-card mb-10 overflow-hidden"
             >
-              <div className="flex items-center gap-4 p-6">
-                <div className="text-4xl">🏁</div>
+              <div className="flex items-center gap-4 p-5">
+                <div className="flex-none w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF1801] via-[#E10600] to-[#B30500] text-white flex items-center justify-center shadow-lg shadow-red-600/30 ring-1 ring-red-400/30">
+                  <Flag className="w-5 h-5" strokeWidth={2.25} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className={`text-lg font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  <h3 className={`text-base font-bold tracking-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {selectedSession.session_name}
                   </h3>
                   <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -372,8 +368,9 @@ export const Dashboard = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-black text-red-500">
-                    {selectedDriverNumbers.length}/5
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Slots</div>
+                  <div className="text-2xl font-black text-[#E10600] tabular-nums">
+                    {selectedDriverNumbers.length}<span className="text-slate-300 dark:text-slate-600 font-bold">/5</span>
                   </div>
                 </div>
               </div>
@@ -388,7 +385,7 @@ export const Dashboard = () => {
             {selectedSession.is_cancelled && (
               <StatusCard
                 variant="warning"
-                icon="🚫"
+                icon={<Ban className="w-5 h-5" strokeWidth={2.25} />}
                 title="This session was cancelled"
                 message="OpenF1 has no telemetry, lap, or tyre data for cancelled sessions — the cars never ran."
                 hint="Try a different Grand Prix or session that completed normally."
@@ -405,7 +402,7 @@ export const Dashboard = () => {
               return (
                 <StatusCard
                   variant="info"
-                  icon="🧪"
+                  icon={<FlaskConical className="w-5 h-5" strokeWidth={2.25} />}
                   title="Pre-season testing session selected"
                   message="OpenF1 has limited data for pre-season testing — telemetry (speed, throttle, brake) is often unavailable, though laps and stints may load."
                   hint="For full analysis, pick a completed Grand Prix race weekend (Practice, Qualifying or Race)."
@@ -491,24 +488,22 @@ export const Dashboard = () => {
             className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {[
-              { icon: '📊', title: 'Multi-Driver Comparison', desc: 'Compare telemetry across multiple drivers simultaneously' },
-              { icon: '🏁', title: 'Race Analysis', desc: 'Deep dive into overtakes, strategies, and key moments' },
-              { icon: '🔮', title: 'Predictions', desc: 'ML-powered race outcome forecasts' },
+              { Icon: BarChart3, title: 'Multi-Driver Comparison', desc: 'Compare telemetry across multiple drivers simultaneously' },
+              { Icon: Flag, title: 'Race Analysis', desc: 'Deep dive into overtakes, strategies, and key moments' },
+              { Icon: LineChart, title: 'Predictions', desc: 'ML-powered race outcome forecasts' },
             ].map((feature, i) => (
               <motion.div
                 key={i}
-                whileHover={{ y: -8 }}
-                className={`p-8 rounded-2xl border backdrop-blur-xl transition-all ${
-                  isDark
-                    ? 'bg-slate-900/70 border-slate-700/50 hover:border-red-500/50 shadow-2xl shadow-black/40'
-                    : 'bg-white/70 border-gray-200/50 hover:border-red-500/30 shadow-lg'
-                }`}
+                whileHover={{ y: -4 }}
+                className="f1-card-pad transition-all hover:border-[rgba(225,6,0,0.35)]"
               >
-                <div className="text-5xl mb-4">{feature.icon}</div>
-                <h4 className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className="w-11 h-11 rounded-xl bg-[#E10600]/10 dark:bg-[#E10600]/15 text-[#E10600] flex items-center justify-center mb-4 ring-1 ring-[#E10600]/20">
+                  <feature.Icon className="w-5 h-5" strokeWidth={2.25} />
+                </div>
+                <h4 className={`font-bold text-base mb-1.5 tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {feature.title}
                 </h4>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   {feature.desc}
                 </p>
               </motion.div>

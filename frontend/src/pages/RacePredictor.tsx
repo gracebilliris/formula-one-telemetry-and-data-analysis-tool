@@ -172,17 +172,14 @@ export const RacePredictor = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="h-1 w-24 rounded-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-500 mb-4" />
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <h1 className="f1-page-heading">Race Predictor</h1>
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-purple-500">ML model</span>
-          </div>
+          <div className="f1-eyebrow mb-3" style={{ color: '#9333EA' }}>ML model · forecast</div>
+          <h1 className="f1-page-heading">Race Predictor</h1>
           <p className="f1-page-sub">
-            Forecast race outcomes from qualifying performance using a neural-net trained on historical sessions.
+            Forecast race outcomes from qualifying performance using a neural network trained on historical sessions.
           </p>
         </motion.div>
 
