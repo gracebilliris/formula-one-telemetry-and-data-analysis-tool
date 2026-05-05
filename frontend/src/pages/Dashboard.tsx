@@ -15,6 +15,8 @@ export const Dashboard = () => {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [selectedDriverNumbers, setSelectedDriverNumbers] = useState<number[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [sessionDrivers, setSessionDrivers] = useState<Driver[] | null>(null);
+  const [sessionDriversLoading, setSessionDriversLoading] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   // Fetch all meetings and drivers on mount
@@ -52,6 +54,47 @@ export const Dashboard = () => {
     };
     fetchData();
   }, []);
+
+  // Fetch drivers actually present in the selected session, and prune any
+  // previously-selected drivers who didn't participate in this session.
+  useEffect(() => {
+    if (!selectedSession) {
+      setSessionDrivers(null);
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setSessionDriversLoading(true);
+        const data = await openF1Api.getDrivers({ session_key: selectedSession.session_key });
+        if (cancelled) return;
+        const seen = new Set<number>();
+        const unique = (Array.isArray(data) ? data : []).filter((d) => {
+          if (seen.has(d.driver_number)) return false;
+          seen.add(d.driver_number);
+          return true;
+        });
+        setSessionDrivers(unique);
+        // Drop any selected driver numbers that aren't in this session
+        setSelectedDriverNumbers((prev) => {
+          const validNums = new Set(unique.map((d) => d.driver_number));
+          const next = prev.filter((n) => validNums.has(n));
+          return next.length === prev.length ? prev : next;
+        });
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to fetch session drivers:', err);
+          setSessionDrivers([]);
+        }
+      } finally {
+        if (!cancelled) setSessionDriversLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSession]);
 
   // Helper function to check if session is in the future
   // Includes 2-hour buffer for:
@@ -104,7 +147,10 @@ export const Dashboard = () => {
 
   const sessionTypes = ['Practice', 'Qualifying', 'Race', 'Sprint'];
 
-  const filteredDrivers = drivers.filter(
+  // Prefer drivers from the selected session; fall back to global list otherwise
+  const driverPool: Driver[] = sessionDrivers ?? drivers;
+
+  const filteredDrivers = driverPool.filter(
     (d) => {
       // If no search term, show all drivers
       if (!driverSearch) return true;
@@ -144,7 +190,7 @@ export const Dashboard = () => {
 
   // Convert selected driver numbers to actual driver objects
   const selectedDrivers = selectedDriverNumbers
-    .map(num => drivers.find(d => d.driver_number === num))
+    .map(num => driverPool.find(d => d.driver_number === num))
     .filter((d): d is Driver => d !== undefined);
 
   // Debug: Log when modal opens
@@ -326,15 +372,20 @@ export const Dashboard = () => {
 
               {/* Add Driver Button */}
               <motion.button
-                whileHover={{ scale: selectedDriverNumbers.length >= 5 ? 1 : 1.02 }}
-                whileTap={{ scale: selectedDriverNumbers.length >= 5 ? 1 : 0.98 }}
+                whileHover={{ scale: (selectedDriverNumbers.length >= 5 || !selectedSession) ? 1 : 1.02 }}
+                whileTap={{ scale: (selectedDriverNumbers.length >= 5 || !selectedSession) ? 1 : 0.98 }}
                 onClick={() => setShowDriverModal(true)}
-                disabled={selectedDriverNumbers.length >= 5}
-                className={selectedDriverNumbers.length >= 5
+                disabled={selectedDriverNumbers.length >= 5 || !selectedSession || sessionDriversLoading}
+                title={!selectedSession ? 'Select a session first' : undefined}
+                className={(selectedDriverNumbers.length >= 5 || !selectedSession || sessionDriversLoading)
                   ? 'w-full py-3 rounded-xl font-bold uppercase tracking-wider text-sm bg-slate-200 text-slate-400 dark:bg-slate-800/50 dark:text-slate-600 cursor-not-allowed'
                   : 'f1-btn-primary w-full justify-center'}
               >
-                + Add Driver
+                {!selectedSession
+                  ? 'Select a session first'
+                  : sessionDriversLoading
+                    ? 'Loading drivers…'
+                    : '+ Add Driver'}
               </motion.button>
             </div>
           </motion.div>
@@ -627,7 +678,11 @@ export const Dashboard = () => {
                       padding: '24px',
                       color: isDark ? '#9ca3af' : '#6b7280',
                     }}>
-                      {drivers.length === 0 ? 'Loading drivers...' : 'No drivers found'}
+                      {sessionDriversLoading
+                        ? 'Loading drivers for this session…'
+                        : driverPool.length === 0
+                          ? 'No drivers found for this session'
+                          : 'No drivers match your search'}
                     </div>
                   )}
                 </div>
