@@ -32,6 +32,177 @@ body {
   100% { background-position: -200% 0; }
 }
 
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+@keyframes barberPole {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+/* Reusable component utilities (plain CSS, Tailwind v4 friendly) */
+.f1-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240 / 0.6);
+  background-color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+}
+.dark .f1-card {
+  background-color: rgb(15 23 42 / 0.7);
+  border-color: rgb(51 65 85 / 0.6);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.4);
+}
+.f1-card-pad {
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .f1-card-pad { padding: 1.5rem; }
+}
+.f1-card-pad {
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240 / 0.6);
+  background-color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1);
+}
+.dark .f1-card-pad {
+  background-color: rgb(15 23 42 / 0.7);
+  border-color: rgb(51 65 85 / 0.6);
+}
+
+.f1-field {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  background-color: rgb(248 250 252);
+  transition: border-color 150ms;
+}
+.f1-field:hover {
+  border-color: rgb(239 68 68 / 0.6);
+}
+.dark .f1-field {
+  background-color: rgb(30 41 59 / 0.6);
+  border-color: rgb(51 65 85 / 0.6);
+}
+.dark .f1-field:hover {
+  border-color: rgb(239 68 68 / 0.6);
+}
+
+.f1-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.375rem;
+  color: rgb(100 116 139);
+}
+.dark .f1-label { color: rgb(148 163 184); }
+
+.f1-select {
+  width: 100%;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  outline: none;
+  color: rgb(15 23 42);
+}
+.dark .f1-select { color: rgb(255 255 255); }
+
+.f1-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  background-color: rgb(220 38 38);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 150ms;
+  box-shadow: 0 10px 15px -3px rgb(220 38 38 / 0.2);
+  border: none;
+  cursor: pointer;
+}
+.f1-btn-primary:hover:not(:disabled) {
+  background-color: rgb(239 68 68);
+  box-shadow: 0 10px 25px -5px rgb(220 38 38 / 0.4);
+}
+.f1-btn-primary:active:not(:disabled) {
+  background-color: rgb(185 28 28);
+}
+.f1-btn-primary:disabled {
+  background-color: rgb(51 65 85);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.f1-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: rgb(226 232 240);
+  color: rgb(30 41 59);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 150ms;
+  border: none;
+  cursor: pointer;
+}
+.f1-btn-ghost:hover {
+  background-color: rgb(203 213 225);
+}
+.dark .f1-btn-ghost {
+  background-color: rgb(30 41 59);
+  color: rgb(226 232 240);
+}
+.dark .f1-btn-ghost:hover {
+  background-color: rgb(51 65 85);
+}
+
+.f1-progress-bar {
+  background: repeating-linear-gradient(45deg, rgb(239 68 68), rgb(239 68 68) 10px, rgb(220 38 38) 10px, rgb(220 38 38) 20px);
+  animation: barberPole 1s linear infinite;
+}
+
+.f1-page-heading {
+  font-size: 1.875rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: rgb(15 23 42);
+}
+.dark .f1-page-heading { color: white; }
+@media (min-width: 640px) {
+  .f1-page-heading { font-size: 2.25rem; }
+}
+
+.f1-page-sub {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  color: rgb(71 85 105);
+  max-width: 42rem;
+}
+.dark .f1-page-sub { color: rgb(148 163 184); }
+@media (min-width: 640px) {
+  .f1-page-sub { font-size: 1rem; }
+}
+
+.f1-accent-bar {
+  height: 4px;
+  width: 4rem;
+  border-radius: 9999px;
+  background: linear-gradient(to right, rgb(220 38 38), rgb(248 113 113));
+}
+
 /* Subtle scrollbar in dark mode */
 @media (prefers-color-scheme: dark) {
   ::-webkit-scrollbar { width: 10px; height: 10px; }

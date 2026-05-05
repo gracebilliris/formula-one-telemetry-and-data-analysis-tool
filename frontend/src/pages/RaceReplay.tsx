@@ -347,106 +347,125 @@ export const RaceReplay = () => {
     duration > 0 ? fmtTime(duration) : '';
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-950' : 'bg-gray-50'} px-4 sm:px-6 lg:px-8 py-8`}>
+    <div className={`min-h-screen transition-colors ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'} px-4 sm:px-6 lg:px-8 py-10`}>
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Hero */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            🏎️ Race Replay
-          </h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Full-session animated 2D replay of car GPS positions from OpenF1's <code className="px-1 rounded bg-black/20">/location</code> endpoint.
+          <div className="f1-accent-bar mb-4" />
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h1 className="f1-page-heading">Race Replay</h1>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">Live track view</span>
+          </div>
+          <p className="f1-page-sub">
+            Full-session 2D animation of car GPS positions from OpenF1's <code className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-white/10 text-xs">/location</code> endpoint.
             Inspired by{' '}
             <a
               href="https://github.com/IAmTomShaw/f1-race-replay"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-red-500 hover:text-red-400 underline underline-offset-2"
+              className="text-red-500 hover:text-red-400 underline underline-offset-2 font-semibold"
             >
               IAmTomShaw/f1-race-replay
             </a>.
           </p>
         </motion.div>
 
-        {/* Session selector */}
-        <div className={`rounded-xl p-4 ${isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'} grid grid-cols-1 md:grid-cols-4 gap-3`}>
-          <div>
-            <label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Season</label>
-            <select
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              className={`w-full rounded-md px-3 py-2 text-sm ${isDark ? 'bg-gray-800 border border-gray-700 text-white' : 'bg-gray-50 border border-gray-300 text-gray-900'}`}
-            >
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+        {/* Session selector card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="f1-card-pad"
+        >
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-red-600 to-red-500" />
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Session Selection</h2>
           </div>
-          <div className="md:col-span-2">
-            <label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Grand Prix</label>
-            <select
-              value={meetingKey}
-              onChange={(e) => setMeetingKey(parseInt(e.target.value, 10) || '')}
-              disabled={meetings.length === 0}
-              className={`w-full rounded-md px-3 py-2 text-sm ${isDark ? 'bg-gray-800 border border-gray-700 text-white' : 'bg-gray-50 border border-gray-300 text-gray-900'} disabled:opacity-50`}
-            >
-              <option value="">Select Grand Prix</option>
-              {meetings.map((m) => (
-                <option key={m.meeting_key} value={m.meeting_key}>{m.meeting_official_name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <motion.div whileHover={{ y: -2 }} className="f1-field">
+              <label className="f1-label">Season</label>
+              <select
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                className="f1-select"
+              >
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} className="f1-field md:col-span-2">
+              <label className="f1-label">Grand Prix</label>
+              <select
+                value={meetingKey}
+                onChange={(e) => setMeetingKey(parseInt(e.target.value, 10) || '')}
+                disabled={meetings.length === 0}
+                className="f1-select disabled:opacity-50"
+              >
+                <option value="">Select Grand Prix</option>
+                {meetings.map((m) => (
+                  <option key={m.meeting_key} value={m.meeting_key}>{m.meeting_official_name}</option>
+                ))}
+              </select>
+            </motion.div>
+            <motion.div whileHover={{ y: -2 }} className="f1-field">
+              <label className="f1-label">Session</label>
+              <select
+                value={sessionKey}
+                onChange={(e) => setSessionKey(parseInt(e.target.value, 10) || '')}
+                disabled={sessions.length === 0}
+                className="f1-select disabled:opacity-50"
+              >
+                <option value="">Select session</option>
+                {sessions.map((s) => (
+                  <option key={s.session_key} value={s.session_key} disabled={s.is_cancelled}>
+                    {s.session_name}{s.is_cancelled ? ' (cancelled)' : ''}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
           </div>
-          <div>
-            <label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Session</label>
-            <select
-              value={sessionKey}
-              onChange={(e) => setSessionKey(parseInt(e.target.value, 10) || '')}
-              disabled={sessions.length === 0}
-              className={`w-full rounded-md px-3 py-2 text-sm ${isDark ? 'bg-gray-800 border border-gray-700 text-white' : 'bg-gray-50 border border-gray-300 text-gray-900'} disabled:opacity-50`}
-            >
-              <option value="">Select session</option>
-              {sessions.map((s) => (
-                <option key={s.session_key} value={s.session_key} disabled={s.is_cancelled}>
-                  {s.session_name}{s.is_cancelled ? ' (cancelled)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-4 flex flex-wrap gap-3 items-center pt-2">
+
+          <div className="flex flex-wrap gap-3 items-center pt-5">
             {!loading ? (
               <button
                 onClick={loadReplay}
                 disabled={!selectedSession || selectedSession?.is_cancelled}
-                className="px-5 py-2 rounded-md bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-bold uppercase tracking-wide transition-colors"
+                className="f1-btn-primary"
               >
-                Load full session replay
+                <span>▶</span> Load full session replay
               </button>
             ) : (
-              <button
-                onClick={cancelLoad}
-                className="px-5 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold uppercase tracking-wide"
-              >
+              <button onClick={cancelLoad} className="f1-btn-ghost px-5 py-2.5">
                 Cancel ({progress}%)
               </button>
             )}
             {selectedSession && !loading && tracks.length === 0 && (
-              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                Loads the entire session — Practice / Qualifying / Race. Larger sessions may take 30–60 s.
+              <span className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Loads the entire session — Practice / Qualifying / Race. Larger sessions may take 30–60&nbsp;s.
               </span>
             )}
             {tracks.length > 0 && (
-              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                Loaded {tracks.length} drivers • {sessionDurationLabel} of replay
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {tracks.length} drivers • {sessionDurationLabel} loaded
               </span>
             )}
           </div>
 
           {loading && (
-            <div className="md:col-span-4 space-y-1">
-              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{progressLabel}</div>
-              <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
-                <div className="h-full bg-red-600 transition-all" style={{ width: `${progress}%` }} />
+            <div className="space-y-2 pt-4">
+              <div className="flex justify-between items-baseline text-xs">
+                <span className="font-mono text-slate-500 dark:text-slate-400">{progressLabel}</span>
+                <span className="font-mono font-bold text-red-500">{progress}%</span>
+              </div>
+              <div className="relative w-full h-2 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800">
+                <div
+                  className="absolute inset-y-0 left-0 f1-progress-bar transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {error && (
           <StatusCard
@@ -468,53 +487,89 @@ export const RaceReplay = () => {
 
         {/* Replay viewport */}
         {tracks.length > 0 && bounds && duration > 0 && (
-          <div className={`rounded-xl overflow-hidden ${isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'}`}>
-            <div className="relative w-full aspect-[16/9] bg-black/40">
-              <canvas ref={canvasRef} className="w-full h-full block" />
-              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-md bg-black/60 text-white text-xs font-mono backdrop-blur-sm">
-                T+{fmtTime(currentMs)} / {fmtTime(duration)}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="f1-card overflow-hidden"
+          >
+            {/* Cinematic canvas */}
+            <div className="relative w-full aspect-[16/9] bg-gradient-to-br from-slate-950 via-black to-slate-950">
+              {/* Subtle grid */}
+              <div
+                className="absolute inset-0 opacity-20 pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+                  backgroundSize: '32px 32px',
+                }}
+              />
+              <canvas ref={canvasRef} className="relative w-full h-full block" />
+              {/* Vignette */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%)' }}
+              />
+
+              {/* HUD: Time + status */}
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-lg bg-black/70 text-white font-mono backdrop-blur-md border border-white/10">
+                  <div className="text-[10px] uppercase tracking-widest text-red-400 font-bold">Session Time</div>
+                  <div className="text-xl font-black tabular-nums leading-none mt-0.5">
+                    T+{fmtTime(currentMs)}
+                    <span className="text-slate-400 text-sm ml-1.5">/ {fmtTime(duration)}</span>
+                  </div>
+                </div>
+                {playing && (
+                  <div className="px-2.5 py-1 rounded-md bg-red-600 text-white text-[10px] font-black uppercase tracking-widest" style={{ animation: 'pulseGlow 1.6s ease-in-out infinite' }}>
+                    ● Live
+                  </div>
+                )}
+              </div>
+
+              {/* HUD: Driver count + speed */}
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-lg bg-black/70 text-white backdrop-blur-md border border-white/10">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Speed</div>
+                  <div className="text-lg font-black leading-none mt-0.5 text-red-400">{speed}×</div>
+                </div>
+              </div>
+
+              {/* HUD: Session label bottom-left */}
+              <div className="absolute bottom-4 left-4 text-[11px] uppercase tracking-widest font-bold text-white/70">
+                {selectedSession?.session_name} • {meetings.find(m => m.meeting_key === selectedSession?.meeting_key)?.country_name}
               </div>
             </div>
 
             {/* Controls */}
-            <div className={`p-4 space-y-3 ${isDark ? 'bg-gray-900 border-t border-gray-800' : 'bg-gray-50 border-t border-gray-200'}`}>
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className={`p-4 sm:p-5 space-y-4 ${isDark ? 'bg-slate-900/60 border-t border-slate-800' : 'bg-slate-50 border-t border-slate-200'}`}>
+              {/* Transport row */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => setPlaying((p) => !p)}
-                  className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors min-w-[90px]"
+                  className={`f1-btn-primary min-w-[110px] ${playing ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/20 hover:shadow-amber-600/40' : ''}`}
                 >
                   {playing ? '⏸ Pause' : '▶ Play'}
                 </button>
-                <button
-                  onClick={() => { setCurrentMs(0); setPlaying(false); }}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                >
-                  ⏮ Restart
+                <button onClick={() => { setCurrentMs(0); setPlaying(false); }} className="f1-btn-ghost" title="Restart">
+                  ⏮
                 </button>
-                <button
-                  onClick={() => setCurrentMs((t) => Math.max(0, t - 30000))}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                >
-                  ⏪ -30s
+                <button onClick={() => setCurrentMs((t) => Math.max(0, t - 30000))} className="f1-btn-ghost" title="Back 30 s">
+                  ⏪ 30s
                 </button>
-                <button
-                  onClick={() => setCurrentMs((t) => Math.min(duration, t + 30000))}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                >
-                  +30s ⏩
+                <button onClick={() => setCurrentMs((t) => Math.min(duration, t + 30000))} className="f1-btn-ghost" title="Forward 30 s">
+                  30s ⏩
                 </button>
-                <div className="flex items-center gap-1 ml-2">
-                  <span className={`text-xs font-semibold uppercase mr-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Speed</span>
+
+                <div className="flex items-center gap-1 ml-auto p-1 rounded-lg bg-slate-200/70 dark:bg-slate-800/70 border border-slate-300/40 dark:border-slate-700/40">
+                  <span className="text-[10px] font-bold uppercase tracking-widest mx-2 text-slate-500 dark:text-slate-400">Speed</span>
                   {SPEEDS.map((s) => (
                     <button
                       key={s}
                       onClick={() => setSpeed(s)}
-                      className={`px-2.5 py-1 rounded text-xs font-bold transition-colors ${
+                      className={`px-2.5 py-1 rounded text-xs font-black tabular-nums transition-all ${
                         speed === s
-                          ? 'bg-red-600 text-white'
-                          : isDark
-                          ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                          ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
                       }`}
                     >
                       {s}×
@@ -522,53 +577,71 @@ export const RaceReplay = () => {
                   ))}
                 </div>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={duration}
-                step={100}
-                value={currentMs}
-                onChange={(e) => { setPlaying(false); setCurrentMs(parseInt(e.target.value, 10)); }}
-                className="w-full accent-red-600"
-              />
+
+              {/* Scrubber row with elapsed/remaining */}
+              <div className="space-y-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration}
+                  step={100}
+                  value={currentMs}
+                  onChange={(e) => { setPlaying(false); setCurrentMs(parseInt(e.target.value, 10)); }}
+                  className="w-full accent-red-600 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  <span>{fmtTime(currentMs)}</span>
+                  <span>-{fmtTime(Math.max(0, duration - currentMs))}</span>
+                </div>
+              </div>
 
               {/* Driver chips */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {drivers.map((d) => {
-                  const active = selectedDrivers.size === 0 || selectedDrivers.has(d.driver_number);
-                  return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    Drivers ({selectedDrivers.size > 0 ? `${selectedDrivers.size} focused` : 'all visible'})
+                  </span>
+                  {selectedDrivers.size > 0 && (
                     <button
-                      key={d.driver_number}
-                      onClick={() => toggleDriver(d.driver_number)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold tracking-wide transition-all ${active ? 'opacity-100' : 'opacity-40'}`}
-                      style={{
-                        backgroundColor: '#' + (d.team_colour || '666'),
-                        color: '#fff',
-                      }}
-                      title={d.full_name}
+                      onClick={() => setSelectedDrivers(new Set())}
+                      className="text-[11px] font-semibold text-red-500 hover:text-red-400 transition"
                     >
-                      #{d.driver_number} {d.name_acronym}
+                      Clear focus
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {drivers.map((d) => {
+                    const active = selectedDrivers.size === 0 || selectedDrivers.has(d.driver_number);
+                    const color = '#' + (d.team_colour || '666');
+                    return (
+                      <button
+                        key={d.driver_number}
+                        onClick={() => toggleDriver(d.driver_number)}
+                        className={`group relative inline-flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md text-[11px] font-black tracking-wide transition-all border-l-[3px] ${
+                          active
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm hover:scale-105'
+                            : 'bg-slate-100/30 dark:bg-slate-800/30 text-slate-500 dark:text-slate-500 opacity-60 hover:opacity-100'
+                        }`}
+                        style={{ borderLeftColor: color }}
+                        title={d.full_name}
+                      >
+                        <span className="tabular-nums opacity-60">#{d.driver_number}</span>
+                        <span>{d.name_acronym}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              {selectedDrivers.size > 0 && (
-                <button
-                  onClick={() => setSelectedDrivers(new Set())}
-                  className={`text-xs underline ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
-                >
-                  Clear focus
-                </button>
-              )}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {!tracks.length && !loading && !error && (
           <StatusCard
             variant="info"
             icon="🏁"
-            title="Pick a session to start replay"
+            title="Pick a session to start the replay"
             message="Choose a Grand Prix and session above, then hit Load full session replay. The entire session (Practice, Qualifying or Race) will be loaded — for a 2-hour race that's roughly 50 MB of GPS data fetched in chunks."
           />
         )}

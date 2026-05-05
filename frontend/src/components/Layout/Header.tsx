@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { motion } from 'framer-motion';
 
 export const Header = () => {
   const { isDark, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   const navLinks = [
     { label: 'Dashboard', href: '/' },
@@ -38,20 +39,31 @@ export const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={`relative px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                  isDark
-                    ? 'text-gray-400 hover:text-red-500'
-                    : 'text-gray-600 hover:text-red-600'
-                }`}
-              >
-                <span className="relative z-10">{link.label}</span>
-                <span className={`absolute bottom-0 left-4 right-4 h-0.5 bg-red-600 scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100`} />
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`relative px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? isDark ? 'text-white' : 'text-gray-900'
+                      : isDark
+                      ? 'text-gray-400 hover:text-red-500'
+                      : 'text-gray-600 hover:text-red-600'
+                  }`}
+                >
+                  <span className="relative z-10">{link.label}</span>
+                  {isActive && (
+                    <motion.span
+                      layoutId="active-nav-pill"
+                      className="absolute inset-x-2 bottom-1 h-0.5 bg-red-600 rounded-full"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Theme Toggle & Mobile Menu Button */}
