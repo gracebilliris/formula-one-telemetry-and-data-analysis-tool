@@ -170,40 +170,36 @@ export const RaceSummariser = () => {
     <div className={`min-h-screen transition-colors ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <div className="relative">
-            <div className="absolute -top-6 left-0 h-1 w-24 bg-gradient-to-r from-red-600 to-red-500 rounded-full"></div>
-            <h1 className={`text-5xl md:text-6xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-950'}`}>
-              Race Summariser
-            </h1>
-            <p className={`mt-3 text-lg font-light ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              AI-powered race analysis with automatic insights
-            </p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="f1-accent-bar mb-4" />
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h1 className="f1-page-heading">Race Summariser</h1>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">AI insights</span>
           </div>
+          <p className="f1-page-sub">
+            AI-powered race analysis with timeline, overtakes, strategy and stats — all generated from OpenF1 data.
+          </p>
         </motion.div>
 
         {/* Session Selector */}
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className={`rounded-2xl border backdrop-blur-xl transition-all mb-8 ${
-            isDark
-              ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-              : 'bg-white/70 border-gray-200/50 shadow-lg'
-          }`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="f1-card-pad mb-8"
         >
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-red-600 to-red-500" />
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Session Selection</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               {/* Year */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Season
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Season</label>
                 <select
                   value={filters.year?.toString() || ''}
                   onChange={(e) => setFilters({ ...filters, year: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">All</option>
                   {years.map((year) => (
@@ -212,17 +208,15 @@ export const RaceSummariser = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
 
               {/* GP */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Grand Prix
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Grand Prix</label>
                 <select
                   value={filters.gpName || ''}
                   onChange={(e) => setFilters({ ...filters, gpName: e.target.value || undefined })}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">All</option>
                   {gpMeetings.map((meeting) => (
@@ -231,17 +225,15 @@ export const RaceSummariser = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
 
               {/* Session Type */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Type
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Type</label>
                 <select
                   value={filters.sessionType || ''}
                   onChange={(e) => setFilters({ ...filters, sessionType: (e.target.value as any) || undefined })}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">All</option>
                   {['Practice', 'Qualifying', 'Race', 'Sprint'].map((type) => (
@@ -250,30 +242,27 @@ export const RaceSummariser = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
 
               {/* Session */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Session
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Session</label>
                 <select
                   value={selectedSession?.session_key || ''}
                   onChange={(e) => {
                     const session = filteredSessions.find((s) => s.session_key.toString() === e.target.value);
                     if (session) setSelectedSession(session);
                   }}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">Select</option>
                   {filteredSessions.map((session) => (
-                    <option key={session.session_key} value={session.session_key}>
-                      {session.session_name} • {new Date(session.date_start).toLocaleDateString()}
+                    <option key={session.session_key} value={session.session_key} disabled={session.is_cancelled}>
+                      {session.session_name} • {new Date(session.date_start).toLocaleDateString()}{session.is_cancelled ? ' (cancelled)' : ''}
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
+              </motion.div>
           </div>
         </motion.div>
 
@@ -294,15 +283,14 @@ export const RaceSummariser = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-8 p-6 rounded-2xl border backdrop-blur-xl ${
-              isDark
-                ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-                : 'bg-white/70 border-gray-200/50 shadow-lg'
-            }`}
+            className="f1-card-pad mb-8"
           >
-            <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {selectedSession?.session_name}
-            </h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-red-600 to-red-500" />
+              <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {selectedSession?.session_name}
+              </h3>
+            </div>
             <div className="prose dark:prose-invert max-w-none text-sm">
               <div dangerouslySetInnerHTML={{ __html: raceNarrative.replace(/\n/g, '<br />') }} />
             </div>
@@ -317,17 +305,17 @@ export const RaceSummariser = () => {
             transition={{ delay: 0.2 }}
             className="mb-8"
           >
-            <div className="flex gap-2 flex-wrap">
+            <div className="inline-flex gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/70 border border-slate-300/40 dark:border-slate-700/40 flex-wrap">
               {(['timeline', 'overtakes', 'strategy', 'stats'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wide transition-all ${
+                  className={`px-5 py-2 rounded-lg font-bold text-sm uppercase tracking-wider transition-all ${
                     activeTab === tab
-                      ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-600/30'
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
                       : isDark
-                      ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'text-slate-300 hover:bg-slate-700/60'
+                      : 'text-slate-700 hover:bg-white'
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}

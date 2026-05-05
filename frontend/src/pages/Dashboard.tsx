@@ -162,17 +162,15 @@ export const Dashboard = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header Section */}
-        <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <div className="relative">
-            {/* Background accent line */}
-            <div className="absolute -top-6 left-0 h-1 w-24 bg-gradient-to-r from-red-600 to-red-500 rounded-full"></div>
-            <h1 className={`text-5xl md:text-6xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-950'}`}>
-              Telemetry Analysis
-            </h1>
-            <p className={`mt-3 text-lg font-light ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Real-time F1 telemetry comparison and race analysis
-            </p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="f1-accent-bar mb-4" />
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h1 className="f1-page-heading">Telemetry Analysis</h1>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">Live data</span>
           </div>
+          <p className="f1-page-sub">
+            Real-time F1 telemetry comparison and race analysis powered by OpenF1.
+          </p>
         </motion.div>
 
         {/* Main Grid */}
@@ -184,44 +182,26 @@ export const Dashboard = () => {
             transition={{ delay: 0.1 }}
             className="lg:col-span-2"
           >
-            <div
-              className={`rounded-2xl border backdrop-blur-xl transition-all ${
-                isDark
-                  ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-                  : 'bg-white/70 border-gray-200/50 shadow-lg'
-              }`}
-            >
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-8">
+            <div className="f1-card-pad">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="w-1.5 h-6 bg-gradient-to-b from-red-600 to-red-500 rounded-full"></div>
-                  <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     Session Selection
                   </h2>
                 </div>
 
                 {/* Filter Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {/* Season */}
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    className={`px-4 py-3 rounded-xl border transition-all ${
-                      isDark
-                        ? 'bg-slate-800/50 border-slate-700/50 hover:border-red-500/50'
-                        : 'bg-gray-50 border-gray-200 hover:border-red-500'
-                    }`}
-                  >
-                    <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Season
-                    </label>
+                  <motion.div whileHover={{ y: -2 }} className="f1-field">
+                    <label className="f1-label">Season</label>
                     <select
                       value={filters.year?.toString() || ''}
                       onChange={(e) => {
                         setFilters({ ...filters, year: e.target.value ? parseInt(e.target.value) : undefined });
                         setSelectedSession(null);
                       }}
-                      className={`w-full bg-transparent text-sm font-semibold outline-none ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="f1-select"
                     >
                       <option value="">All</option>
                       {years.map((year) => (
@@ -233,26 +213,15 @@ export const Dashboard = () => {
                   </motion.div>
 
                   {/* Grand Prix */}
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    className={`px-4 py-3 rounded-xl border transition-all ${
-                      isDark
-                        ? 'bg-slate-800/50 border-slate-700/50 hover:border-red-500/50'
-                        : 'bg-gray-50 border-gray-200 hover:border-red-500'
-                    }`}
-                  >
-                    <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Grand Prix
-                    </label>
+                  <motion.div whileHover={{ y: -2 }} className="f1-field">
+                    <label className="f1-label">Grand Prix</label>
                     <select
                       value={filters.gpName || ''}
                       onChange={(e) => {
                         setFilters({ ...filters, gpName: e.target.value || undefined });
                         setSelectedSession(null);
                       }}
-                      className={`w-full bg-transparent text-sm font-semibold outline-none ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="f1-select"
                     >
                       <option value="">All</option>
                       {gpMeetings.map((meeting) => (
@@ -264,17 +233,8 @@ export const Dashboard = () => {
                   </motion.div>
 
                   {/* Session Type */}
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    className={`px-4 py-3 rounded-xl border transition-all ${
-                      isDark
-                        ? 'bg-slate-800/50 border-slate-700/50 hover:border-red-500/50'
-                        : 'bg-gray-50 border-gray-200 hover:border-red-500'
-                    }`}
-                  >
-                    <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Type
-                    </label>
+                  <motion.div whileHover={{ y: -2 }} className="f1-field">
+                    <label className="f1-label">Type</label>
                     <select
                       value={filters.sessionType || ''}
                       onChange={(e) => {
@@ -284,9 +244,7 @@ export const Dashboard = () => {
                         });
                         setSelectedSession(null);
                       }}
-                      className={`w-full bg-transparent text-sm font-semibold outline-none ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="f1-select"
                     >
                       <option value="">All</option>
                       {sessionTypes.map((type) => (
@@ -298,17 +256,8 @@ export const Dashboard = () => {
                   </motion.div>
 
                   {/* Session */}
-                  <motion.div
-                    whileHover={{ y: -2 }}
-                    className={`px-4 py-3 rounded-xl border transition-all ${
-                      isDark
-                        ? 'bg-slate-800/50 border-slate-700/50 hover:border-red-500/50'
-                        : 'bg-gray-50 border-gray-200 hover:border-red-500'
-                    }`}
-                  >
-                    <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Session
-                    </label>
+                  <motion.div whileHover={{ y: -2 }} className="f1-field">
+                    <label className="f1-label">Session</label>
                     <select
                       value={selectedSession?.session_key || ''}
                       onChange={(e) => {
@@ -317,9 +266,7 @@ export const Dashboard = () => {
                         );
                         if (session) handleSessionSelect(session);
                       }}
-                      className={`w-full bg-transparent text-sm font-semibold outline-none ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}
+                      className="f1-select"
                     >
                       <option value="">Select</option>
                       {filteredSessions.map((session) => (
@@ -330,7 +277,6 @@ export const Dashboard = () => {
                     </select>
                   </motion.div>
                 </div>
-              </div>
             </div>
           </motion.div>
 
@@ -339,22 +285,21 @@ export const Dashboard = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className={`rounded-2xl border backdrop-blur-xl transition-all ${
-              isDark
-                ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-                : 'bg-white/70 border-gray-200/50 shadow-lg'
-            }`}
+            className="f1-card"
           >
-            <div className="p-8 h-full flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
+            <div className="p-6 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-5">
                 <div className="w-1.5 h-6 bg-gradient-to-b from-red-600 to-red-500 rounded-full"></div>
-                <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Drivers
                 </h2>
+                <span className="ml-auto text-xs font-bold tracking-wider text-red-500">
+                  {selectedDriverNumbers.length}/5
+                </span>
               </div>
 
               {/* Selected Drivers Chips */}
-              <div className="space-y-3 mb-6 flex-1">
+              <div className="space-y-2.5 mb-5 flex-1">
                 {selectedDrivers.length > 0 ? (
                   selectedDrivers.map((driver, idx) => (
                     <motion.div
@@ -363,7 +308,7 @@ export const Dashboard = () => {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.9, opacity: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50 transition-all"
+                      className="flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50 transition-all ring-1 ring-red-400/30"
                     >
                       <div>
                         <div className="font-bold text-sm">#{driver.driver_number}</div>
@@ -372,13 +317,14 @@ export const Dashboard = () => {
                       <button
                         onClick={() => toggleDriver(driver.driver_number)}
                         className="ml-2 hover:opacity-75 transition text-lg font-bold"
+                        aria-label={`Remove ${driver.broadcast_name}`}
                       >
                         ✕
                       </button>
                     </motion.div>
                   ))
                 ) : (
-                  <div className={`text-center py-8 text-sm italic ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <div className={`text-center py-8 text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                     No drivers selected
                   </div>
                 )}
@@ -386,21 +332,13 @@ export const Dashboard = () => {
 
               {/* Add Driver Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  console.log('Add Driver button clicked!');
-                  setShowDriverModal(true);
-                  console.log('showDriverModal state set to true');
-                }}
+                whileHover={{ scale: selectedDriverNumbers.length >= 5 ? 1 : 1.02 }}
+                whileTap={{ scale: selectedDriverNumbers.length >= 5 ? 1 : 0.98 }}
+                onClick={() => setShowDriverModal(true)}
                 disabled={selectedDriverNumbers.length >= 5}
-                className={`w-full py-3 rounded-xl font-bold uppercase tracking-wide transition-all ${
-                  selectedDriverNumbers.length >= 5
-                    ? isDark
-                      ? 'bg-slate-700/50 text-gray-600 cursor-not-allowed'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50'
-                }`}
+                className={selectedDriverNumbers.length >= 5
+                  ? 'w-full py-3 rounded-xl font-bold uppercase tracking-wider text-sm bg-slate-200 text-slate-400 dark:bg-slate-800/50 dark:text-slate-600 cursor-not-allowed'
+                  : 'f1-btn-primary w-full justify-center'}
               >
                 + Add Driver
               </motion.button>
@@ -412,22 +350,18 @@ export const Dashboard = () => {
         <AnimatePresence>
           {selectedSession && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className={`mb-12 rounded-2xl border backdrop-blur-xl overflow-hidden ${
-                isDark
-                  ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-                  : 'bg-white/70 border-gray-200/50 shadow-lg'
-              }`}
+              exit={{ opacity: 0, y: -10 }}
+              className="f1-card mb-10 overflow-hidden"
             >
-              <div className="flex items-center gap-4 p-8">
+              <div className="flex items-center gap-4 p-6">
                 <div className="text-4xl">🏁</div>
-                <div className="flex-1">
-                  <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-lg font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {selectedSession.session_name}
                   </h3>
-                  <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     {new Date(selectedSession.date_start).toLocaleDateString('en-US', {
                       weekday: 'long',
                       year: 'numeric',
@@ -438,7 +372,7 @@ export const Dashboard = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className={`text-2xl font-black ${isDark ? 'text-red-500' : 'text-red-600'}`}>
+                  <div className="text-2xl font-black text-red-500">
                     {selectedDriverNumbers.length}/5
                   </div>
                 </div>

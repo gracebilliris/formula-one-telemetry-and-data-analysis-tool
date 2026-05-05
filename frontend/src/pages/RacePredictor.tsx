@@ -175,16 +175,15 @@ export const RacePredictor = () => {
     <div className={`min-h-screen transition-colors ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <div className="relative">
-            <div className="absolute -top-6 left-0 h-1 w-24 bg-gradient-to-r from-purple-600 to-purple-500 rounded-full"></div>
-            <h1 className={`text-5xl md:text-6xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-950'}`}>
-              Race Predictor ML
-            </h1>
-            <p className={`mt-3 text-lg font-light ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              AI-powered race outcome predictions based on qualifying performance
-            </p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="h-1 w-24 rounded-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-500 mb-4" />
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h1 className="f1-page-heading">Race Predictor</h1>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-purple-500">ML model</span>
           </div>
+          <p className="f1-page-sub">
+            Forecast race outcomes from qualifying performance using a neural-net trained on historical sessions.
+          </p>
         </motion.div>
 
         {/* Model Status */}
@@ -192,11 +191,11 @@ export const RacePredictor = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-8 p-4 rounded-lg border ${
+            className={`mb-8 p-4 rounded-xl border ${
               isDark
-                ? 'bg-yellow-900/20 border-yellow-700'
-                : 'bg-yellow-100 border-yellow-300'
-            } ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}
+                ? 'bg-yellow-900/20 border-yellow-700/50 text-yellow-300'
+                : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+            }`}
           >
             🔄 Loading ML model...
           </motion.div>
@@ -216,26 +215,23 @@ export const RacePredictor = () => {
 
         {/* Session Selector */}
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className={`rounded-2xl border backdrop-blur-xl transition-all mb-8 ${
-            isDark
-              ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/40'
-              : 'bg-white/70 border-gray-200/50 shadow-lg'
-          }`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="f1-card-pad mb-8"
         >
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-purple-600 to-purple-500" />
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Qualifying Source</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Year */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Season
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Season</label>
                 <select
                   value={filters.year?.toString() || ''}
                   onChange={(e) => setFilters({ ...filters, year: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">All</option>
                   {years.map((year) => (
@@ -244,17 +240,15 @@ export const RacePredictor = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
 
               {/* GP */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Grand Prix
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Grand Prix</label>
                 <select
                   value={filters.gpName || ''}
                   onChange={(e) => setFilters({ ...filters, gpName: e.target.value || undefined })}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">All</option>
                   {gpMeetings.map((meeting) => (
@@ -263,30 +257,27 @@ export const RacePredictor = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
 
               {/* Qualifying Session */}
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Qualifying Session
-                </label>
+              <motion.div whileHover={{ y: -2 }} className="f1-field">
+                <label className="f1-label">Qualifying Session</label>
                 <select
                   value={selectedSession?.session_key || ''}
                   onChange={(e) => {
                     const session = qualifyingSessions.find((s) => s.session_key.toString() === e.target.value);
                     if (session) handleSessionSelect(session);
                   }}
-                  className={`w-full bg-transparent text-sm font-semibold outline-none ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className="f1-select"
                 >
                   <option value="">Select</option>
                   {qualifyingSessions.map((session) => (
-                    <option key={session.session_key} value={session.session_key}>
-                      {session.session_name} • {new Date(session.date_start).toLocaleDateString()}
+                    <option key={session.session_key} value={session.session_key} disabled={session.is_cancelled}>
+                      {session.session_name} • {new Date(session.date_start).toLocaleDateString()}{session.is_cancelled ? ' (cancelled)' : ''}
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
+              </motion.div>
           </div>
         </motion.div>
 
