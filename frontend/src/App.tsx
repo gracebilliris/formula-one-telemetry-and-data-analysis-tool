@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { Header } from './components/Layout/Header';
-import { Navigation } from './components/Layout/Navigation';
 import { Footer } from './components/Layout/Footer';
 import './App.css';
 
@@ -26,19 +25,16 @@ function App() {
       <Router>
         <div className="flex flex-col min-h-screen">
           <Header />
-          <div className="flex flex-1">
-            <Navigation />
-            <main className="flex-1">
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/replay" element={<RaceReplay />} />
-                  <Route path="/summariser" element={<RaceSummariser />} />
-                  <Route path="/predictor" element={<RacePredictor />} />
-                </Routes>
-              </Suspense>
-            </main>
-          </div>
+          <main className="flex-1">
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/replay" element={<RaceReplay />} />
+                <Route path="/summariser" element={<RaceSummariser />} />
+                <Route path="/predictor" element={<RacePredictor />} />
+              </Routes>
+            </Suspense>
+          </main>
           <Footer />
         </div>
       </Router>
