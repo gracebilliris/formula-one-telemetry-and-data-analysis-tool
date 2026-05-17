@@ -510,27 +510,25 @@ export const RaceReplay = () => {
                 style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%)' }}
               />
 
-              {/* HUD: Time + status */}
-              <div className="absolute top-4 left-4 flex items-center gap-2">
-                <div className="px-3 py-1.5 rounded-lg bg-black/70 text-white font-mono backdrop-blur-md border border-white/10">
-                  <div className="text-[10px] uppercase tracking-widest text-red-400 font-bold">Session Time</div>
-                  <div className="text-xl font-black tabular-nums leading-none mt-0.5">
-                    T+{fmtTime(currentMs)}
-                    <span className="text-slate-400 text-sm ml-1.5">/ {fmtTime(duration)}</span>
+              {/* HUD: Top bar (time on left, speed on right) — single flex row prevents overlap */}
+              <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="px-2.5 py-1.5 sm:px-3 rounded-lg bg-black/70 text-white font-mono backdrop-blur-md border border-white/10 min-w-0">
+                    <div className="text-[9px] sm:text-[10px] uppercase tracking-widest text-red-400 font-bold">Session Time</div>
+                    <div className="text-base sm:text-xl font-black tabular-nums leading-none mt-0.5 whitespace-nowrap">
+                      T+{fmtTime(currentMs)}
+                      <span className="text-slate-400 text-xs sm:text-sm ml-1.5">/ {fmtTime(duration)}</span>
+                    </div>
                   </div>
+                  {playing && (
+                    <div className="hidden sm:block px-2.5 py-1 rounded-md bg-red-600 text-white text-[10px] font-black uppercase tracking-widest flex-shrink-0" style={{ animation: 'pulseGlow 1.6s ease-in-out infinite' }}>
+                      ● Live
+                    </div>
+                  )}
                 </div>
-                {playing && (
-                  <div className="px-2.5 py-1 rounded-md bg-red-600 text-white text-[10px] font-black uppercase tracking-widest" style={{ animation: 'pulseGlow 1.6s ease-in-out infinite' }}>
-                    ● Live
-                  </div>
-                )}
-              </div>
-
-              {/* HUD: Driver count + speed */}
-              <div className="absolute top-4 right-4 flex items-center gap-2">
-                <div className="px-3 py-1.5 rounded-lg bg-black/70 text-white backdrop-blur-md border border-white/10">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Speed</div>
-                  <div className="text-lg font-black leading-none mt-0.5 text-red-400">{speed}×</div>
+                <div className="px-2.5 py-1.5 sm:px-3 rounded-lg bg-black/70 text-white backdrop-blur-md border border-white/10 flex-shrink-0">
+                  <div className="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-400 font-bold">Speed</div>
+                  <div className="text-base sm:text-lg font-black leading-none mt-0.5 text-red-400">{speed}×</div>
                 </div>
               </div>
 
